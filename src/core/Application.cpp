@@ -18,6 +18,10 @@ void Application::run() {
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
+    processes.push_back({1, 0, "systemd", Vector3{0.0f, 0.0f, 0.0f}});
+    processes.push_back({200, 1, "firefox", Vector3{1.0f, 0.0f, 3.0f}});
+    processes.push_back({300, 2, "vim", Vector3{4.0f, 2.0f, 3.0f}});
+
     while (!WindowShouldClose()) {
         UpdateCamera(&camera, CAMERA_FREE);
         BeginDrawing();
@@ -26,7 +30,7 @@ void Application::run() {
 
         BeginMode3D(camera);
 
-        renderer.render();
+        renderer.render(processes);
 
         EndMode3D();
 
