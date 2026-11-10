@@ -1,19 +1,37 @@
 #include "raylib.h"
 
 int main() {
-  InitWindow(1280, 720, "Linux Process Visualizer");
+    InitWindow(1280, 720, "Linux Process Visualizer");
 
-  SetTargetFPS(60);
+    SetTargetFPS(60);
 
-  while (!WindowShouldClose()) {
-    BeginDrawing();
+    Camera3D camera{};
 
-    ClearBackground(BLACK);
+    camera.position = Vector3{10.0f, 10.0f, 10.0f};
+    camera.target = Vector3{0.0f, 0.0f, 0.0f};
+    camera.up = Vector3{0.0f, 1.0f, 0.0f};
 
-    EndDrawing();
-  }
+    camera.fovy = 45.0f;
+    camera.projection = CAMERA_PERSPECTIVE;
 
-  CloseWindow();
+    while (!WindowShouldClose()) {
+        BeginDrawing();
 
-  return 0;
+        ClearBackground(BLACK);
+
+        BeginMode3D(camera);
+
+        DrawSphere(Vector3{0.0f, 0.0f, 0.0f}, 1.0f, RED);
+
+        DrawGrid(10, 10);
+
+        EndMode3D();
+        DrawFPS(10, 10);
+
+        EndDrawing();
+    }
+
+    CloseWindow();
+
+    return 0;
 }
