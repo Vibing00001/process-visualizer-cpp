@@ -4,7 +4,7 @@ LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
 OUT_DIR = compiled
 TARGET = $(OUT_DIR)/process_visualizer
-SRC = src/main.cpp
+SRC = $(shell find src -name '*.cpp')
 
 all: $(TARGET)
 

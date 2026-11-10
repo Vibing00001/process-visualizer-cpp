@@ -15,6 +15,7 @@ int main() {
     camera.projection = CAMERA_PERSPECTIVE;
 
     while (!WindowShouldClose()) {
+        UpdateCamera(&camera, CAMERA_FREE);
         BeginDrawing();
 
         ClearBackground(BLACK);
