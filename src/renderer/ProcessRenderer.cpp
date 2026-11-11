@@ -1,6 +1,7 @@
 #include "ProcessRenderer.h"
 #include "raylib.h"
 
+#include <algorithm>
 #include <unordered_map>
 
 void ProcessRenderer::render(
@@ -21,7 +22,27 @@ void ProcessRenderer::render(
     }
 
     for (const auto &[pid, process] : processes) {
-        DrawSphere(process.pos, 1.0, WHITE);
+
+        // Color based on CPU utilization
+        Color color = GREEN;
+
+        if (process.cpuUsage >= 75.0f) {
+            color = RED;
+        } else if (process.cpuUsage >= 50.0f) {
+            color = ORANGE;
+        } else if (process.cpuUsage >= 25.0f) {
+            color = YELLOW;
+        }
+
+        // Radius based on memory usage
+        float radius =
+            std::clamp(0.5f + process.memoryMB / 2000.0f, 0.5f, 1.5f);
+
+        // Solid sphere
+        DrawSphere(process.pos, radius, color);
+
+        // Slightly larger wireframe
+        DrawSphereWires(process.pos, radius * 1.05f, 12, 12, Fade(color, 0.5f));
     }
 
     DrawGrid(50, 2.0f);
