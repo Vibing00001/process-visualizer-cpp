@@ -1,13 +1,12 @@
 #pragma once
 
-#include "../process/Process.h"
+#include "../process/ProcessManager.h"
 #include "../renderer/ProcessRenderer.h"
-#include <vector>
 
 class Application {
   private:
     ProcessRenderer renderer;
-    std::vector<Process> processes;
+    ProcessManager processManager;
 
   public:
     Application();

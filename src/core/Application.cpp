@@ -18,9 +18,13 @@ void Application::run() {
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
-    processes.push_back({1, 0, "systemd", Vector3{0.0f, 0.0f, 0.0f}});
-    processes.push_back({200, 1, "firefox", Vector3{1.0f, 0.0f, 3.0f}});
-    processes.push_back({300, 1, "vim", Vector3{4.0f, 2.0f, 3.0f}});
+    Process process1 = {100, 0, "systemd", Vector3{0.0f, 6.0f, 0.0f}};
+    Process process2 = {200, 100, "firefox", Vector3{-4.0f, 2.0f, 0.0f}};
+    Process process3 = {300, 100, "vim", Vector3{4.0f, 2.0f, 0.0f}};
+
+    processManager.addProcess(process1);
+    processManager.addProcess(process2);
+    processManager.addProcess(process3);
 
     while (!WindowShouldClose()) {
         UpdateCamera(&camera, CAMERA_FREE);
@@ -30,7 +34,7 @@ void Application::run() {
 
         BeginMode3D(camera);
 
-        renderer.render(processes);
+        renderer.render(processManager.getProcesses());
 
         EndMode3D();
 

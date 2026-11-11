@@ -3,26 +3,24 @@
 
 #include <unordered_map>
 
-void ProcessRenderer::render(const std::vector<Process> &processes) const {
-    std::unordered_map<int, const Process *> processMap;
+void ProcessRenderer::render(
+    const std::unordered_map<int, Process> &processes) const {
 
-    for (const auto &process : processes) {
-        processMap[process.pid] = &process;
-    }
+    for (const auto &[pid, process] : processes) {
+        int ppid = process.ppid;
 
-    for (const auto &process : processes) {
-        auto it = processMap.find(process.ppid);
+        auto it = processes.find(ppid);
 
-        if (it == processMap.end())
+        if (it == processes.end())
             continue;
 
-        const Process *parent = it->second;
-        Vector3 parentVector = parent->pos;
+        const Process &parent = it->second;
+        Vector3 parentVector = parent.pos;
 
         DrawLine3D(parentVector, process.pos, BLUE);
     }
 
-    for (const auto &process : processes) {
+    for (const auto &[pid, process] : processes) {
         DrawSphere(process.pos, 1.0, WHITE);
     }
 
