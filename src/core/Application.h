@@ -1,12 +1,14 @@
 #pragma once
 
 #include "../process/ProcessManager.h"
+#include "../renderer/CameraController.h"
 #include "../renderer/ProcessRenderer.h"
 
 class Application {
   private:
     ProcessRenderer renderer;
     ProcessManager processManager;
+    CameraController cameraController;
 
   public:
     Application();

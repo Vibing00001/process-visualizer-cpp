@@ -9,14 +9,6 @@ Application::Application() {
 Application::~Application() { CloseWindow(); }
 
 void Application::run() {
-    Camera3D camera{};
-
-    camera.position = Vector3{10.0f, 10.0f, 10.0f};
-    camera.target = Vector3{0.0f, 0.0f, 0.0f};
-    camera.up = Vector3{0.0f, 1.0f, 0.0f};
-
-    camera.fovy = 45.0f;
-    camera.projection = CAMERA_PERSPECTIVE;
 
     processManager.addProcess(
         {1, 0, "systemd", Vector3{0.0f, 6.0f, 0.0f}, 10.0f, 100.0f});
@@ -34,12 +26,12 @@ void Application::run() {
         {400, 100, "vim", Vector3{-2.0f, 0.0f, 0.0f}, 55.0f, 800.0f});
 
     while (!WindowShouldClose()) {
-        UpdateCamera(&camera, CAMERA_FREE);
+        cameraController.update();
         BeginDrawing();
 
         ClearBackground(BLACK);
 
-        BeginMode3D(camera);
+        BeginMode3D(cameraController.getCamera());
 
         renderer.render(processManager.getProcesses());
 
