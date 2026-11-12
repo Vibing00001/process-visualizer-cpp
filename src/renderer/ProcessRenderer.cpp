@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <unordered_map>
 
-void ProcessRenderer::render(
-    const std::unordered_map<int, Process> &processes) const {
+void ProcessRenderer::render(const std::unordered_map<int, Process> &processes,
+                             const Model &sphere) const {
 
     for (const auto &[pid, process] : processes) {
         int ppid = process.ppid;
@@ -39,11 +39,15 @@ void ProcessRenderer::render(
             std::clamp(0.5f + process.memoryMB / 2000.0f, 0.5f, 1.5f);
 
         // Solid sphere
-        DrawSphere(process.pos, radius, color);
+        // DrawSphere(process.pos, radius, color);
+
+        DrawModelEx(sphere, process.pos, Vector3{0.0f, 1.0f, 0.0f}, 0.0f,
+                    Vector3{radius, radius, radius}, color);
 
         // Slightly larger wireframe
-        DrawSphereWires(process.pos, radius * 1.05f, 12, 12, Fade(color, 0.5f));
+        // DrawSphereWires(process.pos, radius * 1.02f, 16, 16, Fade(color,
+        // 0.15f));
     }
 
-    DrawGrid(50, 2.0f);
+    // DrawGrid(50, 2.0f);
 }

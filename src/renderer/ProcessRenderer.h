@@ -5,5 +5,6 @@
 
 class ProcessRenderer {
   public:
-    void render(const std::unordered_map<int, Process> &processes) const;
+    void render(const std::unordered_map<int, Process> &processes,
+                const Model &sphere) const;
 };
