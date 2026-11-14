@@ -2,13 +2,17 @@
 
 #include "../process/ProcessManager.h"
 #include "../renderer/CameraController.h"
+#include "../renderer/Lighting.h"
 #include "../renderer/ProcessRenderer.h"
+#include <memory>
 
 class Application {
   private:
-    ProcessRenderer renderer;
     ProcessManager processManager;
     CameraController cameraController;
+
+    std::unique_ptr<Lighting> lighting;
+    std::unique_ptr<ProcessRenderer> renderer;
 
   public:
     Application();

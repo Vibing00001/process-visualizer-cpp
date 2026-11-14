@@ -4,7 +4,12 @@
 #include <unordered_map>
 
 class ProcessRenderer {
+  private:
+    Model sphere{};
+
   public:
-    void render(const std::unordered_map<int, Process> &processes,
-                const Model &sphere) const;
+    explicit ProcessRenderer(const Shader &shader);
+    ~ProcessRenderer();
+
+    void render(const std::unordered_map<int, Process> &processes) const;
 };
