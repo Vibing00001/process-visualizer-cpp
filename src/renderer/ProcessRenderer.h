@@ -6,6 +6,7 @@
 class ProcessRenderer {
   private:
     Model sphere{};
+    float calculateRadius(const Process &process) const;
 
   public:
     explicit ProcessRenderer(const Shader &shader);

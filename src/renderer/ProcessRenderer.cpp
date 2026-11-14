@@ -13,6 +13,10 @@ ProcessRenderer::ProcessRenderer(const Shader &shader) {
     sphere.materials[0].shader = shader;
 }
 
+float ProcessRenderer::calculateRadius(const Process &process) const {
+    return std::clamp(0.5f + process.memoryMB / 2000.0f, 0.5f, 1.5f);
+}
+
 // Destructor
 ProcessRenderer::~ProcessRenderer() { UnloadModel(sphere); }
 

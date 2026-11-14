@@ -54,6 +54,34 @@ void Application::run() {
 
         EndMode3D();
 
+        // Sphere position
+        Vector3 spherePos{0.0f, 6.0f, 0.0f};
+
+        // Move the label above the sphere
+        float radius = 0.55f;
+        float padding = 0.3f;
+
+        Vector3 labelPos{spherePos.x, spherePos.y + radius + padding,
+                         spherePos.z};
+
+        // Convert 3D world coordinates into screen coordinates
+        Vector2 screenPos = GetWorldToScreen(labelPos, camera);
+
+        // Measure the text width
+        std::string name = "systemd";
+        int pid = 1;
+
+        std::string label = name + " (" + std::to_string(pid) + ")";
+        int fontSize = 20;
+
+        int textWidth = MeasureText(label.c_str(), fontSize);
+
+        // Center the text horizontally and place it above the anchor
+        int textX = static_cast<int>(screenPos.x) - textWidth / 2;
+        int textY = static_cast<int>(screenPos.y) - fontSize;
+
+        // Draw the label
+        DrawText(label.c_str(), textX, textY, fontSize, WHITE);
         DrawFPS(10, 10);
         EndDrawing();
     }
