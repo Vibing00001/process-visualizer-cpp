@@ -58,6 +58,12 @@ void Application::run() {
                                        std::to_string(ray.position.y);
 
             std::cout << testPosition << "\n";
+            RayCollision collision =
+                GetRayCollisionSphere(ray, Vector3{0.0f, 6.0f, 0.0f}, 0.55f);
+
+            if (collision.hit) {
+                std::cout << "We hit systemd!" << "\n";
+            }
         }
 
         BeginDrawing();
