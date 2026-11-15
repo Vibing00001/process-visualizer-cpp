@@ -1,5 +1,7 @@
 #include "Application.h"
 #include "raylib.h"
+#include <iostream>
+#include <string>
 
 #include <memory>
 
@@ -44,6 +46,19 @@ void Application::run() {
         const Camera3D &camera = cameraController.getCamera();
 
         lighting->update(camera);
+        Vector2 mousePos = GetMousePosition();
+        bool mouseClicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+
+        if (mouseClicked) {
+            std::cout << mousePos.x << " " << mousePos.y << "\n";
+            Ray ray =
+                GetScreenToWorldRay(mousePos, cameraController.getCamera());
+
+            std::string testPosition = std::to_string(ray.position.x) + " " +
+                                       std::to_string(ray.position.y);
+
+            std::cout << testPosition << "\n";
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
