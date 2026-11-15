@@ -1,8 +1,6 @@
 #include "Application.h"
 #include "raylib.h"
 #include <iostream>
-#include <string>
-
 #include <memory>
 
 Application::Application() {
@@ -50,19 +48,30 @@ void Application::run() {
         bool mouseClicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
         if (mouseClicked) {
-            std::cout << mousePos.x << " " << mousePos.y << "\n";
             Ray ray =
                 GetScreenToWorldRay(mousePos, cameraController.getCamera());
+            selectedPid =
+                renderer->pickProcess(ray, processManager.getProcesses());
 
-            std::string testPosition = std::to_string(ray.position.x) + " " +
-                                       std::to_string(ray.position.y);
+            if (selectedPid.has_value()) {
+                std::cout << selectedPid.value() << "\n";
+                const auto &processes = processManager.getProcesses();
+                auto it = processes.find(selectedPid.value());
 
-            std::cout << testPosition << "\n";
-            RayCollision collision =
-                GetRayCollisionSphere(ray, Vector3{0.0f, 6.0f, 0.0f}, 0.55f);
+                if (it != processes.end()) {
+                    const Process &process = it->second;
+                    std::cout << process.name << " " << process.cpuUsage
+                              << "\n";
+                }
+            }
+        }
 
-            if (collision.hit) {
-                std::cout << "We hit systemd!" << "\n";
+        if (selectedPid.has_value()) {
+            const auto &processes = processManager.getProcesses();
+            auto it = processes.find(selectedPid.value());
+
+            if (it != processes.end()) {
+                const Process &process = it->second;
             }
         }
 
