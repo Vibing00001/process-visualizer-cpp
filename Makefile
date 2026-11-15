@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++20 -Wall -Wextra -g -O0 -Isrc
+CXXFLAGS = -std=c++20 -Wall -Wextra -g -O0 -Isrc -save-temps=obj -fverbose-asm
 LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
 OUT_DIR = compiled
