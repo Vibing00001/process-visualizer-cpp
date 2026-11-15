@@ -1,6 +1,6 @@
 #include "ProcessRenderer.h"
 #include "raylib.h"
-
+#include "raymath.h"
 #include <algorithm>
 #include <unordered_map>
 
@@ -19,6 +19,29 @@ float ProcessRenderer::calculateRadius(const Process &process) const {
 
 // Destructor
 ProcessRenderer::~ProcessRenderer() { UnloadModel(sphere); }
+
+void ProcessRenderer::renderLabels(
+    const std::unordered_map<int, Process> &processes,
+    const Camera3D &camera) const {
+    for (const auto &[pid, process] : processes) {
+        float radius = calculateRadius(process);
+        Vector3 labelPos =
+            Vector3Add(process.pos, Vector3{0.0f, radius + 0.3f, 0.0f});
+        Vector2 screenPos = GetWorldToScreen(labelPos, camera);
+
+        std::string name = process.name;
+        std::string label = name + " (" + std::to_string(pid) + ")";
+        int fontSize = 20;
+
+        int textWidth = MeasureText(label.c_str(), fontSize);
+
+        int textX = static_cast<int>(screenPos.x) - textWidth / 2;
+        int textY = static_cast<int>(screenPos.y) - fontSize;
+
+        // Draw the label
+        DrawText(label.c_str(), textX, textY, fontSize, WHITE);
+    }
+}
 
 void ProcessRenderer::render(
     const std::unordered_map<int, Process> &processes) const {
