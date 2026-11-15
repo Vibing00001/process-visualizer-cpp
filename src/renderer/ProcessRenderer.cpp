@@ -2,6 +2,9 @@
 #include "raylib.h"
 #include "raymath.h"
 #include <algorithm>
+#include <iostream>
+#include <limits>
+#include <optional>
 #include <unordered_map>
 
 // Constructor
@@ -19,6 +22,29 @@ float ProcessRenderer::calculateRadius(const Process &process) const {
 
 // Destructor
 ProcessRenderer::~ProcessRenderer() { UnloadModel(sphere); }
+
+std::optional<int> ProcessRenderer::pickProcess(
+    const Ray &ray, const std::unordered_map<int, Process> &processes) const {
+    float minDist = std::numeric_limits<float>::infinity();
+    std::optional<int> hitPid;
+    for (const auto &[pid, process] : processes) {
+        float radius = calculateRadius(process);
+
+        RayCollision collision =
+            GetRayCollisionSphere(ray, process.pos, radius);
+
+        if (collision.hit && collision.distance < minDist) {
+            minDist = collision.distance;
+            hitPid = pid;
+        }
+    }
+
+    if (hitPid.has_value()) {
+        std::cout << "PID: " << hitPid.value() << " was clicked." << "\n";
+    }
+
+    return hitPid;
+}
 
 void ProcessRenderer::renderLabels(
     const std::unordered_map<int, Process> &processes,

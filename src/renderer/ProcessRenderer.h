@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../process/Process.h"
+#include <optional>
 #include <unordered_map>
 
 class ProcessRenderer {
@@ -15,4 +16,8 @@ class ProcessRenderer {
     void render(const std::unordered_map<int, Process> &processes) const;
     void renderLabels(const std::unordered_map<int, Process> &processes,
                       const Camera3D &camera) const;
+
+    std::optional<int>
+    pickProcess(const Ray &ray,
+                const std::unordered_map<int, Process> &processes) const;
 };

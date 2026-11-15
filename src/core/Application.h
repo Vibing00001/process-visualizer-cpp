@@ -5,6 +5,7 @@
 #include "../renderer/Lighting.h"
 #include "../renderer/ProcessRenderer.h"
 #include <memory>
+#include <optional>
 
 class Application {
   private:
@@ -13,6 +14,7 @@ class Application {
 
     std::unique_ptr<Lighting> lighting;
     std::unique_ptr<ProcessRenderer> renderer;
+    std::optional<int> selectedPid;
 
   public:
     Application();
