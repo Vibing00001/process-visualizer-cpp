@@ -66,15 +66,6 @@ void Application::run() {
             }
         }
 
-        if (selectedPid.has_value()) {
-            const auto &processes = processManager.getProcesses();
-            auto it = processes.find(selectedPid.value());
-
-            if (it != processes.end()) {
-                const Process &process = it->second;
-            }
-        }
-
         BeginDrawing();
         ClearBackground(BLACK);
 
@@ -85,6 +76,19 @@ void Application::run() {
         EndMode3D();
 
         renderer->renderLabels(processManager.getProcesses(), camera);
+
+        if (selectedPid.has_value()) {
+            const auto &processes = processManager.getProcesses();
+            auto it = processes.find(selectedPid.value());
+            // TODO : implement the text box with process info
+            if (it != processes.end()) {
+                int panelX = GetScreenWidth() - 320;
+                int panelY = 20;
+
+                DrawRectangle(panelX, panelY, 300, 200, DARKGRAY);
+            }
+        }
+
         DrawFPS(10, 10);
         EndDrawing();
     }
