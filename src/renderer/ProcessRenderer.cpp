@@ -2,10 +2,12 @@
 #include "raylib.h"
 #include "raymath.h"
 #include <algorithm>
+#include <format>
 #include <iostream>
 #include <limits>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 // Constructor
 ProcessRenderer::ProcessRenderer(const Shader &shader) {
@@ -22,6 +24,50 @@ float ProcessRenderer::calculateRadius(const Process &process) const {
 
 // Destructor
 ProcessRenderer::~ProcessRenderer() { UnloadModel(sphere); }
+
+void ProcessRenderer::renderTextInfo(
+    const std::optional<int> &selectedPid,
+    const std::unordered_map<int, Process> &processes) const {
+    if (selectedPid.has_value()) {
+        auto it = processes.find(selectedPid.value());
+        // TODO : implement the text box with process info
+        if (it != processes.end()) {
+            const Process &process = it->second;
+            int panelWidth = 350;
+            int panelHeight = 250;
+
+            int panelX = GetScreenWidth() - panelWidth - 20;
+            int panelY = 20;
+
+            DrawRectangle(panelX, panelY, panelWidth, panelHeight, DARKGRAY);
+
+            std::string procName = process.name;
+            std::string procPID = std::to_string(process.pid);
+            std::string parentPID = std::to_string(process.ppid);
+            std::string usageCPU = std::format("{:.1f}%", process.cpuUsage);
+            std::string memoryUsage =
+                std::format("{:.1f} MB", process.memoryMB);
+
+            std::vector<std::string> leftSide = {
+                "Process Name: ", "Process PID: ", "Parent PID: ",
+                "CPU USAGE: ", "Memory Usage: "};
+            std::vector<std::string> rightSide = {procName, procPID, parentPID,
+                                                  usageCPU, memoryUsage};
+
+            DrawRectangle(panelX, panelY, panelWidth, panelHeight, DARKGRAY);
+            DrawText("PROCESS INFORMATION", panelX + 15, panelY + 20, 20,
+                     WHITE);
+
+            int lineSpacing = 28;
+
+            for (size_t i = 0; i < leftSide.size(); i++) {
+                DrawText((leftSide[i] + rightSide[i]).c_str(), panelX + 15,
+                         panelY + 70 + static_cast<int>(i) * lineSpacing, 20,
+                         WHITE);
+            }
+        }
+    }
+}
 
 std::optional<int> ProcessRenderer::pickProcess(
     const Ray &ray, const std::unordered_map<int, Process> &processes) const {
