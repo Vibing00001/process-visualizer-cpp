@@ -3,8 +3,6 @@
 #include <iostream>
 #include <memory>
 
-#define OFFSET_RECT 50
-
 Application::Application() {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
     InitWindow(1920, 1080, "Linux Process Visualizer");
@@ -49,6 +47,8 @@ void Application::run() {
         Vector2 mousePos = GetMousePosition();
         bool mouseClicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
+        // TODO: should probably refactor the code and have it in its seperate
+        // function in another class
         if (mouseClicked) {
             Ray ray =
                 GetScreenToWorldRay(mousePos, cameraController.getCamera());
@@ -74,6 +74,7 @@ void Application::run() {
         BeginMode3D(camera);
 
         renderer->render(processManager.getProcesses());
+        renderer->renderOutline(selectedPid, processManager.getProcesses());
 
         EndMode3D();
 

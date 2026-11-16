@@ -25,6 +25,23 @@ float ProcessRenderer::calculateRadius(const Process &process) const {
 // Destructor
 ProcessRenderer::~ProcessRenderer() { UnloadModel(sphere); }
 
+void ProcessRenderer::renderOutline(
+    const std::optional<int> &selectedPid,
+    const std::unordered_map<int, Process> &processes) const {
+    if (!selectedPid.has_value())
+        return;
+
+    auto it = processes.find(*selectedPid);
+
+    if (it == processes.end())
+        return;
+
+    const Process &process = it->second;
+    float radius = calculateRadius(process);
+
+    DrawSphereWires(process.pos, radius + 0.15f, 16, 16, GetColor(0xED008C));
+}
+
 void ProcessRenderer::renderTextInfo(
     const std::optional<int> &selectedPid,
     const std::unordered_map<int, Process> &processes) const {
@@ -69,6 +86,7 @@ void ProcessRenderer::renderTextInfo(
     }
 }
 
+// pick the process that is clicked on by the closest sphere
 std::optional<int> ProcessRenderer::pickProcess(
     const Ray &ray, const std::unordered_map<int, Process> &processes) const {
     float minDist = std::numeric_limits<float>::infinity();
@@ -92,6 +110,7 @@ std::optional<int> ProcessRenderer::pickProcess(
     return hitPid;
 }
 
+// draws labels
 void ProcessRenderer::renderLabels(
     const std::unordered_map<int, Process> &processes,
     const Camera3D &camera) const {
@@ -115,6 +134,7 @@ void ProcessRenderer::renderLabels(
     }
 }
 
+// Draws the actual spheres
 void ProcessRenderer::render(
     const std::unordered_map<int, Process> &processes) const {
 
