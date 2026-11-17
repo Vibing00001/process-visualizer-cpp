@@ -74,7 +74,7 @@ void Application::run() {
         BeginMode3D(camera);
 
         renderer->render(processManager.getProcesses());
-        renderer->renderOutline(selectedPid, processManager.getProcesses());
+        renderer->renderOutline(selectedPid, processManager.getProcesses(), camera);
 
         EndMode3D();
 

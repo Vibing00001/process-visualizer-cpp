@@ -7,6 +7,8 @@
 class ProcessRenderer {
   private:
     Model sphere{};
+    Shader glowShader{};
+    Texture2D haloTexture{};
     float calculateRadius(const Process &process) const;
 
   public:
@@ -23,7 +25,8 @@ class ProcessRenderer {
 
     // TODO: add functions for drawing outline
     void renderOutline(const std::optional<int> &selectedPid,
-                       const std::unordered_map<int, Process> &processes) const;
+                       const std::unordered_map<int, Process> &processes,
+                       const Camera3D &camera) const;
 
     std::optional<int>
     pickProcess(const Ray &ray,

@@ -1,6 +1,8 @@
 #include "ProcessRenderer.h"
 #include "raylib.h"
 #include "raymath.h"
+#include "rlgl.h"
+#include <cmath>
 #include <algorithm>
 #include <format>
 #include <iostream>
@@ -16,6 +18,28 @@ ProcessRenderer::ProcessRenderer(const Shader &shader) {
     sphere = LoadModelFromMesh(mesh);
 
     sphere.materials[0].shader = shader;
+
+    glowShader = LoadShader("shaders/lighting.vs", "shaders/glow.fs");
+
+    // Generate once: a broad halo with a smooth, fully transparent boundary.
+    constexpr int size = 256;
+    Image halo = GenImageColor(size, size, BLANK);
+    auto *pixels = static_cast<Color *>(halo.data);
+    for (int y = 0; y < size; ++y) {
+        for (int x = 0; x < size; ++x) {
+            float dx = (x + 0.5f - size / 2.0f) / (size / 2.0f);
+            float dy = (y + 0.5f - size / 2.0f) / (size / 2.0f);
+            float distance = std::sqrt(dx * dx + dy * dy);
+            float edge = std::clamp((1.0f - distance) / 0.25f, 0.0f, 1.0f);
+            edge = edge * edge * (3.0f - 2.0f * edge);
+            float alpha = std::exp(-5.0f * distance * distance) * edge;
+            pixels[y * size + x] = {226, 0, 116,
+                static_cast<unsigned char>(alpha * 180.0f)};
+        }
+    }
+    haloTexture = LoadTextureFromImage(halo);
+    UnloadImage(halo);
+    SetTextureFilter(haloTexture, TEXTURE_FILTER_BILINEAR);
 }
 
 float ProcessRenderer::calculateRadius(const Process &process) const {
@@ -23,11 +47,16 @@ float ProcessRenderer::calculateRadius(const Process &process) const {
 }
 
 // Destructor
-ProcessRenderer::~ProcessRenderer() { UnloadModel(sphere); }
+ProcessRenderer::~ProcessRenderer() {
+    UnloadTexture(haloTexture);
+    UnloadShader(glowShader);
+    UnloadModel(sphere);
+}
 
 void ProcessRenderer::renderOutline(
     const std::optional<int> &selectedPid,
-    const std::unordered_map<int, Process> &processes) const {
+    const std::unordered_map<int, Process> &processes,
+    const Camera3D &camera) const {
     if (!selectedPid.has_value())
         return;
 
@@ -39,7 +68,26 @@ void ProcessRenderer::renderOutline(
     const Process &process = it->second;
     float radius = calculateRadius(process);
 
-    DrawSphereWires(process.pos, radius + 0.15f, 16, 16, GetColor(0xED008C));
+    SetShaderValue(glowShader, GetShaderLocation(glowShader, "viewPos"),
+                   &camera.position, SHADER_UNIFORM_VEC3);
+
+    // A local material copy leaves the shared sphere's lighting unchanged.
+    Material material = sphere.materials[0];
+    material.shader = glowShader;
+    float surfaceRadius = radius * 1.002f;
+    Matrix transform = MatrixMultiply(
+        MatrixScale(surfaceRadius, surfaceRadius, surfaceRadius),
+        MatrixTranslate(process.pos.x, process.pos.y, process.pos.z));
+    DrawMesh(sphere.meshes[0], material, transform);
+
+    // Flush before changing depth state; translucent halos must not write depth.
+    rlDrawRenderBatchActive();
+    rlDisableDepthMask();
+    BeginBlendMode(BLEND_ADDITIVE);
+    DrawBillboard(camera, haloTexture, process.pos, radius * 5.0f, WHITE);
+    EndBlendMode();
+    rlDrawRenderBatchActive();
+    rlEnableDepthMask();
 }
 
 void ProcessRenderer::renderTextInfo(
