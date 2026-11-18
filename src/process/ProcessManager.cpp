@@ -1,8 +1,12 @@
 #include "ProcessManager.h"
+#include "CpuStuff.h"
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <system_error>
 #include <unordered_set>
+
 void ProcessManager::addProcess(const Process &process) {
     this->processes.insert_or_assign(process.pid, process);
 }
@@ -28,9 +32,26 @@ void ProcessManager::getPath(const fs::path &filePath) const {
         if (!checkNumeric(fileName)) {
             continue;
         }
+        std::string line;
+        std::ifstream file(entry.path());
+        std::vector<std::pair<std::string, std::string>> pairs;
+        while (std::getline(file, line)) {
+            std::istringstream iss(line);
 
-        if (DEBUG) {
-            std::cout << fileName << "\n";
+            std::string key;
+            std::string value;
+
+            iss >> key >> value;
+
+            if (key == "Name:") {
+                pairs.push_back(std::make_pair(key, value));
+            } else if (key == "Pid:") {
+                pairs.push_back(std::make_pair(key, value));
+            } else if (key == "PPid:") {
+                pairs.push_back(std::make_pair(key, value));
+            } else if (key == "VmRSS:") {
+                pairs.push_back(std::make_pair(key, value));
+            }
         }
     }
 }
