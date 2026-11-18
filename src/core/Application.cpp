@@ -48,7 +48,7 @@ void Application::run() {
         bool mouseClicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 
         // TODO: should probably refactor the code and have it in its seperate
-        // function in another class
+        //  function in another class
         if (mouseClicked) {
             Ray ray =
                 GetScreenToWorldRay(mousePos, cameraController.getCamera());
@@ -74,7 +74,8 @@ void Application::run() {
         BeginMode3D(camera);
 
         renderer->render(processManager.getProcesses());
-        renderer->renderOutline(selectedPid, processManager.getProcesses(), camera);
+        renderer->renderOutline(selectedPid, processManager.getProcesses(),
+                                camera);
 
         EndMode3D();
 

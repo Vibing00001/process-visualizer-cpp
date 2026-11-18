@@ -2,8 +2,8 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <format>
 #include <iostream>
 #include <limits>
@@ -34,7 +34,7 @@ ProcessRenderer::ProcessRenderer(const Shader &shader) {
             edge = edge * edge * (3.0f - 2.0f * edge);
             float alpha = std::exp(-5.0f * distance * distance) * edge;
             pixels[y * size + x] = {226, 0, 116,
-                static_cast<unsigned char>(alpha * 180.0f)};
+                                    static_cast<unsigned char>(alpha * 180.0f)};
         }
     }
     haloTexture = LoadTextureFromImage(halo);
@@ -80,7 +80,8 @@ void ProcessRenderer::renderOutline(
         MatrixTranslate(process.pos.x, process.pos.y, process.pos.z));
     DrawMesh(sphere.meshes[0], material, transform);
 
-    // Flush before changing depth state; translucent halos must not write depth.
+    // Flush before changing depth state; translucent halos must not write
+    // depth.
     rlDrawRenderBatchActive();
     rlDisableDepthMask();
     BeginBlendMode(BLEND_ADDITIVE);
