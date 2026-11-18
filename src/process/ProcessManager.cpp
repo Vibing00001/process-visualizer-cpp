@@ -1,11 +1,10 @@
 #include "ProcessManager.h"
-#include "CpuStuff.h"
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <system_error>
-#include <unordered_set>
 
 void ProcessManager::addProcess(const Process &process) {
     this->processes.insert_or_assign(process.pid, process);
@@ -15,9 +14,7 @@ const std::unordered_map<int, Process> &ProcessManager::getProcesses() const {
     return this->processes;
 }
 
-#define DEBUG 1
-
-void ProcessManager::getPath(const fs::path &filePath) const {
+void ProcessManager::getPath(const fs::path &filePath) {
     std::error_code ec;
     fs::directory_iterator it(filePath, ec);
 
@@ -27,48 +24,79 @@ void ProcessManager::getPath(const fs::path &filePath) const {
         return;
     }
 
-    for (const auto &entry : it) {
+    std::unordered_map<int, Process> refreshed;
+    const fs::directory_iterator end;
+    for (; it != end; it.increment(ec)) {
+        if (ec) {
+            break;
+        }
+        const auto &entry = *it;
         std::string fileName = entry.path().filename().string();
         if (!checkNumeric(fileName)) {
             continue;
         }
         std::string line;
-        std::ifstream file(entry.path());
-        std::vector<std::pair<std::string, std::string>> pairs;
+        std::ifstream file(entry.path() / "status");
+        if (!file.is_open()) {
+            continue; // Processes may exit during the scan.
+        }
+        Process process{};
+        bool hasName = false;
+        bool hasPid = false;
+        bool hasParent = false;
         while (std::getline(file, line)) {
             std::istringstream iss(line);
 
             std::string key;
-            std::string value;
-
-            iss >> key >> value;
+            iss >> key;
 
             if (key == "Name:") {
-                pairs.push_back(std::make_pair(key, value));
+                std::getline(iss >> std::ws, process.name);
+                hasName = !process.name.empty();
             } else if (key == "Pid:") {
-                pairs.push_back(std::make_pair(key, value));
+                hasPid = static_cast<bool>(iss >> process.pid);
             } else if (key == "PPid:") {
-                pairs.push_back(std::make_pair(key, value));
+                hasParent = static_cast<bool>(iss >> process.ppid);
             } else if (key == "VmRSS:") {
-                pairs.push_back(std::make_pair(key, value));
+                float memoryKB;
+                if (iss >> memoryKB && memoryKB >= 0.0f) {
+                    process.memoryMB = memoryKB / 1024.0f;
+                }
             }
         }
+        if (file.bad() || !hasName || !hasPid || !hasParent ||
+            process.pid <= 0 || std::to_string(process.pid) != fileName) {
+            continue;
+        }
+        // Keep renderer placement when updating an existing process.
+        auto previous = processes.find(process.pid);
+        if (previous != processes.end()) {
+            process.pos = previous->second.pos;
+        }
+        refreshed.insert_or_assign(process.pid, process);
     }
+
+    if (ec) {
+        std::cerr << "Error scanning " << filePath << ": " << ec.message()
+                  << '\n';
+        return;
+    }
+
+    for (auto &[pid, process] : refreshed) {
+        process.cpuUsage = static_cast<float>(cpuCalculator.getCpuUsage(pid));
+    }
+    for (const auto &[pid, process] : processes) {
+        if (!refreshed.contains(pid)) {
+            cpuCalculator.forgetProcess(pid);
+        }
+    }
+    processes = std::move(refreshed);
 }
 
 bool ProcessManager::checkNumeric(const std::string &procName) const {
-    std::unordered_set<char> nums = {'0', '1', '2', '3', '4',
-                                     '5', '6', '7', '8', '9'};
-
-    if (procName.empty())
-        return false;
-
-    for (char c : procName) {
-        if (!nums.contains(c))
-            return false;
-    }
-
-    return true;
+    return !procName.empty() &&
+           std::all_of(procName.begin(), procName.end(),
+                       [](char c) { return c >= '0' && c <= '9'; });
 }
 
 #ifdef PROCESS_MANAGER_TEST
