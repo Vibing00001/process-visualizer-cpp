@@ -38,7 +38,16 @@ void Application::run() {
     processManager.addProcess(
         {400, 100, "vim", Vector3{-2.0f, 0.0f, 0.0f}, 55.0f, 800.0f});
 
+    // Seed measurements once, then compare samples every second.
+    processManager.updateCpuUsage();
+    double lastCpuUpdate = GetTime();
+
     while (!WindowShouldClose()) {
+        const double now = GetTime();
+        if (now - lastCpuUpdate >= 1.0) {
+            processManager.updateCpuUsage();
+            lastCpuUpdate = now;
+        }
         cameraController.update();
 
         const Camera3D &camera = cameraController.getCamera();

@@ -11,6 +11,17 @@ void ProcessManager::addProcess(const Process &process) {
     this->processes.insert_or_assign(process.pid, process);
 }
 
+void ProcessManager::removeProcess(int pid) {
+    cpuCalculator.forgetProcess(pid);
+    processes.erase(pid);
+}
+
+void ProcessManager::updateCpuUsage() {
+    for (auto &[pid, process] : processes) {
+        process.cpuUsage = static_cast<float>(cpuCalculator.getCpuUsage(pid));
+    }
+}
+
 const std::unordered_map<int, Process> &ProcessManager::getProcesses() const {
     return this->processes;
 }

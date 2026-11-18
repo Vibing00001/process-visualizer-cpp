@@ -32,7 +32,7 @@ clean:
 
 process-test:
 	mkdir -p compiled
-	$(CXX) $(CXXFLAGS) -DPROCESS_MANAGER_TEST src/process/ProcessManager.cpp -o compiled/process_test
+	$(CXX) $(CXXFLAGS) -DPROCESS_MANAGER_TEST src/process/ProcessManager.cpp src/process/CpuStuff.cpp -o compiled/process_test
 	./compiled/process_test
 
 .PHONY: process-test
