@@ -114,3 +114,14 @@ double CalculateCPU::getCpuUsage(int pid) {
 void CalculateCPU::forgetProcess(int pid) {
     previousSamples.erase(pid);
 }
+
+void CalculateCPU::cleanup(const ProcessMap &processes) {
+    for (auto it = previousSamples.begin(); it != previousSamples.end();) {
+
+        if (!processes.contains(it->first)) {
+            it = previousSamples.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}

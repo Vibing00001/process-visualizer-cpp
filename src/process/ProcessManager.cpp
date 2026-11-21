@@ -9,23 +9,11 @@
 #include <system_error>
 #include <unordered_set>
 
-void ProcessManager::addProcess(const Process &process) {
-    processes.insert_or_assign(process.pid, process);
-}
-
 // TODO: decouple the process manager thing
 // Since we are going to use threads
-void ProcessManager::removeProcess(int pid) {
+void ProcessManager::removeProcess(int pid,
+                                   const std::shared_ptr<const ProcessMap>) {
     cpuCalculator.forgetProcess(pid);
-    processes.erase(pid);
-}
-
-// probably dont need this
-void ProcessManager::updateCpuUsage() {
-    // might need to change this to the global process thing instead
-    for (auto &[pid, process] : processes) {
-        process.cpuUsage = static_cast<float>(cpuCalculator.getCpuUsage(pid));
-    }
 }
 
 const std::unordered_map<int, Process> &ProcessManager::getProcesses() const {
@@ -92,6 +80,7 @@ void ProcessManager::getPath(const fs::path &filePath) {
         newSnapShot->emplace(std::stoi(pid), process);
     }
 
+    cpuCalculator.cleanup(*newSnapShot);
     {
         std::lock_guard<std::mutex> lock(mutex);
         processes = newSnapShot;

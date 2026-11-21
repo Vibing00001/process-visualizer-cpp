@@ -1,8 +1,11 @@
 #pragma once
 
+#include "Process.h"
 #include <chrono>
 #include <optional>
 #include <unordered_map>
+
+using ProcessMap = std::unordered_map<int, Process>;
 
 struct CpuSample {
     unsigned long long ticks;
@@ -24,4 +27,5 @@ class CalculateCPU {
     double getCpuUsage(int pid);
     // Call when removing a process from the displayed process list.
     void forgetProcess(int pid);
+    void cleanup(const ProcessMap &processes);
 };

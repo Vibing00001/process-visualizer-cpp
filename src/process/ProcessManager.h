@@ -23,9 +23,7 @@ class ProcessManager {
 
     // maps pid to process
   public:
-    void addProcess(const Process &process);
-    void removeProcess(int pid);
-    void updateCpuUsage();
+    void removeProcess(int pid, std::shared_ptr<const ProcessMap>);
     const std::unordered_map<int, Process> &getProcesses() const;
     void getPath(const fs::path &filePath);
 };
