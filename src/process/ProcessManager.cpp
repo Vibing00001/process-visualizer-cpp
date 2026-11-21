@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <system_error>
 #include <unordered_set>
@@ -89,6 +90,11 @@ void ProcessManager::getPath(const fs::path &filePath) {
                         {0.0f, 0.0f, 0.0f}, cpuUsage,        std::stof(memory)};
 
         newSnapShot->emplace(std::stoi(pid), process);
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        processes = newSnapShot;
     }
 }
 
