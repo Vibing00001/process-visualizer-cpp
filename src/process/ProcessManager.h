@@ -1,19 +1,25 @@
 #pragma once
 
-#include "Process.h"
 #include "CpuStuff.h"
+#include "Process.h"
 #include <filesystem>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace fs = std::filesystem;
+using ProcessMap = std::unordered_map<int, Process>;
 
 class ProcessManager {
   private:
-    std::unordered_map<int, Process> processes;
+    // ProcessMap processes;
     CalculateCPU cpuCalculator;
     bool checkNumeric(const std::string &procName) const;
+    std::shared_ptr<const ProcessMap> processes =
+        std::make_shared<ProcessMap>();
+    std::mutex mutex;
+    std::jthread worker;
 
     // maps pid to process
   public:
@@ -21,5 +27,5 @@ class ProcessManager {
     void removeProcess(int pid);
     void updateCpuUsage();
     const std::unordered_map<int, Process> &getProcesses() const;
-    void getPath(const fs::path &filePath) const;
+    void getPath(const fs::path &filePath);
 };

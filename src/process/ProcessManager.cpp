@@ -3,20 +3,25 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <system_error>
 #include <unordered_set>
 
 void ProcessManager::addProcess(const Process &process) {
-    this->processes.insert_or_assign(process.pid, process);
+    processes.insert_or_assign(process.pid, process);
 }
 
+// TODO: decouple the process manager thing
+// Since we are going to use threads
 void ProcessManager::removeProcess(int pid) {
     cpuCalculator.forgetProcess(pid);
     processes.erase(pid);
 }
 
+// probably dont need this
 void ProcessManager::updateCpuUsage() {
+    // might need to change this to the global process thing instead
     for (auto &[pid, process] : processes) {
         process.cpuUsage = static_cast<float>(cpuCalculator.getCpuUsage(pid));
     }
@@ -26,26 +31,37 @@ const std::unordered_map<int, Process> &ProcessManager::getProcesses() const {
     return this->processes;
 }
 
-#define DEBUG 1
-
-void ProcessManager::getPath(const fs::path &filePath) const {
+void ProcessManager::getPath(const fs::path &filePath) {
     std::error_code ec;
     fs::directory_iterator it(filePath, ec);
-
     if (ec) {
         std::cerr << "Error opening " << filePath << ": " << ec.message()
                   << '\n';
         return;
     }
-
+    // TODO: Implement CPU usage and process storage
+    auto newSnapShot = std::make_shared<ProcessMap>();
     for (const auto &entry : it) {
         std::string fileName = entry.path().filename().string();
+
         if (!checkNumeric(fileName)) {
             continue;
         }
+
+        fs::path statusPath = entry.path() / "status";
+        std::ifstream file(statusPath);
+
+        // Process may have terminated while scanning
+        if (!file) {
+            continue;
+        }
+
         std::string line;
-        std::ifstream file(entry.path());
-        std::vector<std::pair<std::string, std::string>> pairs;
+        std::string name;
+        std::string pid;
+        std::string ppid;
+        std::string memory;
+
         while (std::getline(file, line)) {
             std::istringstream iss(line);
 
@@ -55,15 +71,24 @@ void ProcessManager::getPath(const fs::path &filePath) const {
             iss >> key >> value;
 
             if (key == "Name:") {
-                pairs.push_back(std::make_pair(key, value));
+                name = value;
             } else if (key == "Pid:") {
-                pairs.push_back(std::make_pair(key, value));
+                pid = value;
             } else if (key == "PPid:") {
-                pairs.push_back(std::make_pair(key, value));
+                ppid = value;
             } else if (key == "VmRSS:") {
-                pairs.push_back(std::make_pair(key, value));
+                memory = value;
             }
         }
+
+        // too long to check if its valid or not.
+        float cpuUsage =
+            static_cast<float>(cpuCalculator.getCpuUsage(std::stoi(pid)));
+
+        Process process{std::stoi(pid),     std::stoi(ppid), name,
+                        {0.0f, 0.0f, 0.0f}, cpuUsage,        std::stof(memory)};
+
+        newSnapShot->emplace(std::stoi(pid), process);
     }
 }
 

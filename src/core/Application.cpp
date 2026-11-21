@@ -23,6 +23,7 @@ Application::~Application() {
 void Application::run() {
 
     // Dummy processes
+    /**
     processManager.addProcess(
         {1, 0, "systemd", Vector3{0.0f, 6.0f, 0.0f}, 10.0f, 100.0f});
 
@@ -37,6 +38,7 @@ void Application::run() {
 
     processManager.addProcess(
         {400, 100, "vim", Vector3{-2.0f, 0.0f, 0.0f}, 55.0f, 800.0f});
+    */
 
     // Seed measurements once, then compare samples every second.
     processManager.updateCpuUsage();
