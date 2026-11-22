@@ -1,5 +1,7 @@
 #include "Application.h"
 #include "raylib.h"
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <memory>
 
@@ -21,35 +23,43 @@ Application::~Application() {
 }
 
 void Application::run() {
+    std::shared_ptr<const ProcessMap> snapshot;
     while (!WindowShouldClose()) {
-        auto snapshot = processManager.getProcesses();
-        cameraController.update();
-
-        const Camera3D &camera = cameraController.getCamera();
-
-        lighting->update(camera);
-        Vector2 mousePos = GetMousePosition();
+        auto latestSnapshot = processManager.getProcesses();
+        if (latestSnapshot != snapshot) {
+            snapshot = latestSnapshot;
+            float sceneRadius = 0.0f;
+            for (const auto &[pid, process] : *snapshot) {
+                float distance = std::hypot(process.pos.x, process.pos.z);
+                sceneRadius = std::max(sceneRadius, distance);
+            }
+            // Leave room around the outermost centers for the spheres and labels.
+            cameraController.setSceneRadius(sceneRadius + 3.0f);
+        }
         bool mouseClicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-
-        // TODO: should probably refactor the code and have it in its seperate
-        //  function in another class
         if (mouseClicked) {
-            Ray ray =
-                GetScreenToWorldRay(mousePos, cameraController.getCamera());
+            Ray ray = GetScreenToWorldRay(GetMousePosition(),
+                                          cameraController.getCamera());
             selectedPid = renderer->pickProcess(ray, *snapshot);
+        }
 
-            if (selectedPid.has_value()) {
-                std::cout << selectedPid.value() << "\n";
-                const auto &processes = *snapshot;
-                auto it = processes.find(selectedPid.value());
-
-                if (it != processes.end()) {
-                    const Process &process = it->second;
-                    std::cout << process.name << " " << process.cpuUsage
-                              << "\n";
+        std::optional<Vector3> selectedPosition;
+        if (selectedPid) {
+            auto it = snapshot->find(*selectedPid);
+            if (it == snapshot->end()) {
+                selectedPid.reset();
+            } else {
+                const Process &process = it->second;
+                selectedPosition = process.pos;
+                if (mouseClicked) {
+                    std::cout << *selectedPid << "\n";
+                    std::cout << process.name << " " << process.cpuUsage << "\n";
                 }
             }
         }
+        cameraController.update(selectedPosition);
+        const Camera3D &camera = cameraController.getCamera();
+        lighting->update(camera);
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -61,7 +71,7 @@ void Application::run() {
 
         EndMode3D();
 
-        renderer->renderLabels(*snapshot, camera);
+        renderer->renderLabels(*snapshot, camera, selectedPid);
 
         renderer->renderTextInfo(selectedPid, *snapshot);
 

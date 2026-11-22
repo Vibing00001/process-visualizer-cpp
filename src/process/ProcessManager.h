@@ -22,9 +22,11 @@ class ProcessManager {
     CalculateCPU cpuCalculator;
     std::shared_ptr<const ProcessMap> processes =
         std::make_shared<ProcessMap>();
+    std::vector<int> layoutSlots;
     std::mutex mutex;
     std::condition_variable_any cv;
     std::mutex sleepMutex;
+    void positionProcesses(ProcessMap &snapshot);
     void workerLoop(std::stop_token stopToken);
     std::jthread worker;
 

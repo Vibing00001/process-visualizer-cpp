@@ -162,24 +162,75 @@ std::optional<int> ProcessRenderer::pickProcess(
 // draws labels
 void ProcessRenderer::renderLabels(
     const std::unordered_map<int, Process> &processes,
-    const Camera3D &camera) const {
+    const Camera3D &camera, const std::optional<int> &selectedPid) const {
+    struct Label {
+        const Process *process;
+        Vector2 anchor;
+        float depth;
+    };
+
+    const Vector3 forward =
+        Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+    const Vector3 right =
+        Vector3Normalize(Vector3CrossProduct(forward, camera.up));
+    const Vector3 up = Vector3CrossProduct(right, forward);
+    constexpr int fontSize = 20;
+    constexpr float padding = 4.0f;
+    const int screenWidth = GetScreenWidth();
+    const int screenHeight = GetScreenHeight();
+
+    std::vector<Label> labels;
+    labels.reserve(processes.size());
     for (const auto &[pid, process] : processes) {
-        float radius = calculateRadius(process);
-        Vector3 labelPos =
-            Vector3Add(process.pos, Vector3{0.0f, radius + 0.3f, 0.0f});
-        Vector2 screenPos = GetWorldToScreen(labelPos, camera);
+        float depth = Vector3DotProduct(
+            Vector3Subtract(process.pos, camera.position), forward);
+        if (depth <= rlGetCullDistanceNear() ||
+            depth >= rlGetCullDistanceFar()) {
+            continue;
+        }
 
-        std::string name = process.name;
-        std::string label = name + " (" + std::to_string(pid) + ")";
-        int fontSize = 20;
+        Vector3 labelPos = Vector3Add(
+            process.pos, Vector3Scale(up, calculateRadius(process)));
+        labels.push_back({&process, GetWorldToScreen(labelPos, camera), depth});
+    }
 
-        int textWidth = MeasureText(label.c_str(), fontSize);
+    // Claim screen space for the selected process first, then for nearby nodes.
+    std::sort(labels.begin(), labels.end(), [&](const Label &a, const Label &b) {
+        bool aSelected = selectedPid == a.process->pid;
+        bool bSelected = selectedPid == b.process->pid;
+        if (aSelected != bSelected) {
+            return aSelected;
+        }
+        if (a.depth == b.depth) {
+            return a.process->pid < b.process->pid;
+        }
+        return a.depth < b.depth;
+    });
 
-        int textX = static_cast<int>(screenPos.x) - textWidth / 2;
-        int textY = static_cast<int>(screenPos.y) - fontSize;
+    std::vector<Rectangle> occupied;
+    for (const Label &label : labels) {
+        const Process &process = *label.process;
+        std::string text =
+            process.name + " (" + std::to_string(process.pid) + ")";
+        int textWidth = MeasureText(text.c_str(), fontSize);
+        float x = label.anchor.x - textWidth / 2.0f;
+        float y = label.anchor.y - fontSize - padding;
+        Rectangle bounds{x - padding, y - padding, textWidth + 2 * padding,
+                         fontSize + 2 * padding};
+        if (bounds.x < 0 || bounds.y < 0 ||
+            bounds.x + bounds.width > screenWidth ||
+            bounds.y + bounds.height > screenHeight) {
+            continue;
+        }
+        if (std::any_of(occupied.begin(), occupied.end(), [&](Rectangle other) {
+                return CheckCollisionRecs(bounds, other);
+            })) {
+            continue;
+        }
 
-        // Draw the label
-        DrawText(label.c_str(), textX, textY, fontSize, WHITE);
+        DrawText(text.c_str(), static_cast<int>(x), static_cast<int>(y), fontSize,
+                 WHITE);
+        occupied.push_back(bounds);
     }
 }
 
@@ -187,7 +238,8 @@ void ProcessRenderer::renderLabels(
 void ProcessRenderer::render(
     const std::unordered_map<int, Process> &processes) const {
 
-    // Draw parent-child connections
+    // Keep dense parent-child connections visible behind the labels.
+    constexpr Color connectionColor{35, 64, 92, 255};
     for (const auto &[pid, process] : processes) {
         int ppid = process.ppid;
 
@@ -198,7 +250,7 @@ void ProcessRenderer::render(
 
         const Process &parent = it->second;
 
-        DrawLine3D(parent.pos, process.pos, BLUE);
+        DrawLine3D(parent.pos, process.pos, connectionColor);
     }
 
     // Draw process spheres
@@ -214,8 +266,7 @@ void ProcessRenderer::render(
             color = YELLOW;
         }
 
-        float radius =
-            std::clamp(0.5f + process.memoryMB / 2000.0f, 0.5f, 1.5f);
+        float radius = calculateRadius(process);
 
         DrawModelEx(sphere, process.pos, Vector3{0.0f, 1.0f, 0.0f}, 0.0f,
                     Vector3{radius, radius, radius}, color);

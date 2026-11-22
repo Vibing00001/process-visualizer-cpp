@@ -1,20 +1,22 @@
 #pragma once
 
 #include "raylib.h"
+#include <optional>
 
 class CameraController {
   private:
     Camera3D camera{};
     float yaw = 0.785f;
     float pitch = 0.5f;
-    float distance = 18.0f;
+    float sceneRadius = 0.0f;
+    float zoom = 1.0f;
+    std::optional<float> focusedDistance;
 
-    Vector3 target{0.0f, 2.5f, 0.0f};
-
-    void updatePosition();
+    void updatePosition(float distance);
 
   public:
     CameraController();
-    void update();
+    void setSceneRadius(float radius);
+    void update(const std::optional<Vector3> &selectedPosition);
     const Camera3D& getCamera() const;
 };

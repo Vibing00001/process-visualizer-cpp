@@ -17,7 +17,8 @@ class ProcessRenderer {
 
     void render(const std::unordered_map<int, Process> &processes) const;
     void renderLabels(const std::unordered_map<int, Process> &processes,
-                      const Camera3D &camera) const;
+                      const Camera3D &camera,
+                      const std::optional<int> &selectedPid) const;
 
     void
     renderTextInfo(const std::optional<int> &selectedPid,

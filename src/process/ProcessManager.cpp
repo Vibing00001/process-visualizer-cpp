@@ -1,5 +1,6 @@
 #include "ProcessManager.h"
 #include "CpuStuff.h"
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -94,19 +95,70 @@ void ProcessManager::updateProcesses() {
             memoryMB = std::stof(memory) / 1024.0f;
         }
 
+        int processId = std::stoi(pid);
         float cpuUsage =
-            static_cast<float>(cpuCalculator.getCpuUsage(std::stoi(pid)));
+            static_cast<float>(cpuCalculator.getCpuUsage(processId));
 
-        Process process{std::stoi(pid),     std::stoi(ppid), name,
-                        {0.0f, 0.0f, 0.0f}, cpuUsage,        memoryMB};
-
-        newSnapShot->emplace(std::stoi(pid), process);
+        newSnapShot->emplace(
+            processId,
+            Process{processId, std::stoi(ppid), name, {}, cpuUsage, memoryMB});
     }
 
+    positionProcesses(*newSnapShot);
     cpuCalculator.cleanup(*newSnapShot);
     {
         std::lock_guard<std::mutex> lock(mutex);
         processes = newSnapShot;
+    }
+}
+
+void ProcessManager::positionProcesses(ProcessMap &snapshot) {
+    std::unordered_set<int> placed;
+    for (int &pid : layoutSlots) {
+        if (snapshot.contains(pid)) {
+            placed.insert(pid);
+        } else {
+            pid = 0; // An empty slot left by an exited process.
+        }
+    }
+
+    std::vector<int> newPids;
+    for (const auto &[pid, process] : snapshot) {
+        if (!placed.contains(pid)) {
+            newPids.push_back(pid);
+        }
+    }
+    std::sort(newPids.begin(), newPids.end());
+
+    auto nextPid = newPids.begin();
+    for (int &pid : layoutSlots) {
+        if (pid == 0 && nextPid != newPids.end()) {
+            pid = *nextPid++;
+        }
+    }
+    layoutSlots.insert(layoutSlots.end(), nextPid, newPids.end());
+    while (!layoutSlots.empty() && layoutSlots.back() == 0) {
+        layoutSlots.pop_back();
+    }
+
+    // Walk a square spiral so adding an outer slot leaves existing nodes in
+    // place.
+    constexpr float spacing = 4.0f;
+    int x = 0;
+    int z = 0;
+    int stepX = 0;
+    int stepZ = -1;
+    for (int pid : layoutSlots) {
+        if (pid != 0) {
+            snapshot.at(pid).pos = {x * spacing, 0.0f, z * spacing};
+        }
+        if (x == z || (x < 0 && x == -z) || (x > 0 && x == 1 - z)) {
+            int previousStepX = stepX;
+            stepX = -stepZ;
+            stepZ = previousStepX;
+        }
+        x += stepX;
+        z += stepZ;
     }
 }
 
