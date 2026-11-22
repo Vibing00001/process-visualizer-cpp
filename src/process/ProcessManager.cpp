@@ -9,18 +9,15 @@
 #include <system_error>
 #include <unordered_set>
 
-// TODO: decouple the process manager thing
-// Since we are going to use threads
-void ProcessManager::removeProcess(int pid,
-                                   const std::shared_ptr<const ProcessMap>) {
-    cpuCalculator.forgetProcess(pid);
+namespace fs = std::filesystem;
+
+std::shared_ptr<const ProcessMap> ProcessManager::getProcesses(){
+    std::lock_guard<std::mutex> lock(mutex);
+    return processes;
 }
 
-const std::unordered_map<int, Process> &ProcessManager::getProcesses() const {
-    return this->processes;
-}
-
-void ProcessManager::getPath(const fs::path &filePath) {
+void ProcessManager::updateProcesses() {
+    const fs::path filePath{"/proc"};
     std::error_code ec;
     fs::directory_iterator it(filePath, ec);
     if (ec) {

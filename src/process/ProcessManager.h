@@ -8,7 +8,6 @@
 #include <utility>
 #include <vector>
 
-namespace fs = std::filesystem;
 using ProcessMap = std::unordered_map<int, Process>;
 
 class ProcessManager {
@@ -23,7 +22,6 @@ class ProcessManager {
 
     // maps pid to process
   public:
-    void removeProcess(int pid, std::shared_ptr<const ProcessMap>);
-    const std::unordered_map<int, Process> &getProcesses() const;
-    void getPath(const fs::path &filePath);
+    std::shared_ptr<const ProcessMap> getProcesses();
+    void updateProcesses();
 };

@@ -40,16 +40,8 @@ void Application::run() {
         {400, 100, "vim", Vector3{-2.0f, 0.0f, 0.0f}, 55.0f, 800.0f});
     */
 
-    // Seed measurements once, then compare samples every second.
-    processManager.updateCpuUsage();
-    double lastCpuUpdate = GetTime();
-
     while (!WindowShouldClose()) {
-        const double now = GetTime();
-        if (now - lastCpuUpdate >= 1.0) {
-            processManager.updateCpuUsage();
-            lastCpuUpdate = now;
-        }
+        auto snapshot = processManager.getProcesses();
         cameraController.update();
 
         const Camera3D &camera = cameraController.getCamera();
@@ -63,12 +55,11 @@ void Application::run() {
         if (mouseClicked) {
             Ray ray =
                 GetScreenToWorldRay(mousePos, cameraController.getCamera());
-            selectedPid =
-                renderer->pickProcess(ray, processManager.getProcesses());
+            selectedPid = renderer->pickProcess(ray, *snapshot);
 
             if (selectedPid.has_value()) {
                 std::cout << selectedPid.value() << "\n";
-                const auto &processes = processManager.getProcesses();
+                const auto &processes = *snapshot;
                 auto it = processes.find(selectedPid.value());
 
                 if (it != processes.end()) {
@@ -84,15 +75,14 @@ void Application::run() {
 
         BeginMode3D(camera);
 
-        renderer->render(processManager.getProcesses());
-        renderer->renderOutline(selectedPid, processManager.getProcesses(),
-                                camera);
+        renderer->render(*snapshot);
+        renderer->renderOutline(selectedPid, *snapshot, camera);
 
         EndMode3D();
 
-        renderer->renderLabels(processManager.getProcesses(), camera);
+        renderer->renderLabels(*snapshot, camera);
 
-        renderer->renderTextInfo(selectedPid, processManager.getProcesses());
+        renderer->renderTextInfo(selectedPid, *snapshot);
 
         DrawFPS(10, 10);
         EndDrawing();
