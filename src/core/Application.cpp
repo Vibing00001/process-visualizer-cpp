@@ -4,6 +4,20 @@
 #include <cmath>
 #include <iostream>
 #include <memory>
+#include <utility>
+
+namespace {
+
+const Process &startupProcess(const ProcessMap &processes) {
+    auto first = std::min_element(
+        processes.begin(), processes.end(), [](const auto &a, const auto &b) {
+            return std::pair{a.second.name != "systemd", a.first} <
+                   std::pair{b.second.name != "systemd", b.first};
+        });
+    return first->second;
+}
+
+} // namespace
 
 Application::Application() {
     SetConfigFlags(FLAG_MSAA_4X_HINT);
@@ -24,19 +38,28 @@ Application::~Application() {
 
 void Application::run() {
     std::shared_ptr<const ProcessMap> snapshot;
+    bool started = false;
     while (!WindowShouldClose()) {
         auto latestSnapshot = processManager.getProcesses();
         if (latestSnapshot != snapshot) {
             snapshot = latestSnapshot;
             float sceneRadius = 0.0f;
             for (const auto &[pid, process] : *snapshot) {
-                float distance = std::hypot(process.pos.x, process.pos.z);
+                float distance =
+                    std::hypot(process.pos.x, process.pos.y, process.pos.z);
                 sceneRadius = std::max(sceneRadius, distance);
             }
             // Leave room around the outermost centers for the spheres and labels.
             cameraController.setSceneRadius(sceneRadius + 3.0f);
         }
-        bool mouseClicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+        bool openingCloseUp = !started && !snapshot->empty();
+        if (openingCloseUp) {
+            selectedPid = startupProcess(*snapshot).pid;
+            cameraController.startCloseUp();
+            started = true;
+        }
+        bool mouseClicked =
+            !openingCloseUp && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
         if (mouseClicked) {
             Ray ray = GetScreenToWorldRay(GetMousePosition(),
                                           cameraController.getCamera());

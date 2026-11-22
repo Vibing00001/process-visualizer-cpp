@@ -13,6 +13,8 @@ CameraController::CameraController() {
 
 void CameraController::setSceneRadius(float radius) { sceneRadius = radius; }
 
+void CameraController::startCloseUp() { focusedDistance = 6.0f; }
+
 void CameraController::update(const std::optional<Vector3> &selectedPosition) {
 
     // Rotate camera with right mouse button

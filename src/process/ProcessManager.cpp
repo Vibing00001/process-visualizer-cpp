@@ -2,6 +2,7 @@
 #include "CpuStuff.h"
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -114,11 +115,11 @@ void ProcessManager::updateProcesses() {
 
 void ProcessManager::positionProcesses(ProcessMap &snapshot) {
     std::unordered_set<int> placed;
-    for (int &pid : layoutSlots) {
-        if (snapshot.contains(pid)) {
-            placed.insert(pid);
+    for (LayoutSlot &slot : layoutSlots) {
+        if (snapshot.contains(slot.pid)) {
+            placed.insert(slot.pid);
         } else {
-            pid = 0; // An empty slot left by an exited process.
+            slot.pid = 0;
         }
     }
 
@@ -131,34 +132,54 @@ void ProcessManager::positionProcesses(ProcessMap &snapshot) {
     std::sort(newPids.begin(), newPids.end());
 
     auto nextPid = newPids.begin();
-    for (int &pid : layoutSlots) {
-        if (pid == 0 && nextPid != newPids.end()) {
-            pid = *nextPid++;
+    for (LayoutSlot &slot : layoutSlots) {
+        if (slot.pid == 0 && nextPid != newPids.end()) {
+            slot.pid = *nextPid++;
         }
     }
-    layoutSlots.insert(layoutSlots.end(), nextPid, newPids.end());
-    while (!layoutSlots.empty() && layoutSlots.back() == 0) {
+    while (nextPid != newPids.end()) {
+        layoutSlots.push_back({*nextPid++, nextLayoutPosition()});
+    }
+    while (!layoutSlots.empty() && layoutSlots.back().pid == 0) {
         layoutSlots.pop_back();
     }
 
-    // Walk a square spiral so adding an outer slot leaves existing nodes in
-    // place.
+    for (const LayoutSlot &slot : layoutSlots) {
+        if (slot.pid != 0) {
+            snapshot.at(slot.pid).pos = slot.position;
+        }
+    }
+}
+
+Vector3 ProcessManager::nextLayoutPosition() {
+    if (layoutSlots.empty()) {
+        return {}; // The first slot usually belongs to PID 1.
+    }
+
+    // Grow the volume in proportion to the number of slots and leave space
+    // between spheres, including slots that may be reused on a later refresh.
     constexpr float spacing = 4.0f;
-    int x = 0;
-    int z = 0;
-    int stepX = 0;
-    int stepZ = -1;
-    for (int pid : layoutSlots) {
-        if (pid != 0) {
-            snapshot.at(pid).pos = {x * spacing, 0.0f, z * spacing};
+    float radius = std::max(
+        8.0f, 5.0f * std::cbrt(static_cast<float>(layoutSlots.size())));
+    std::uniform_real_distribution<float> coordinate(-radius, radius);
+    for (;;) {
+        Vector3 position{coordinate(layoutRandom), coordinate(layoutRandom),
+                         coordinate(layoutRandom)};
+        float distanceSquared = position.x * position.x + position.y * position.y +
+                                position.z * position.z;
+        if (distanceSquared > radius * radius) {
+            continue;
         }
-        if (x == z || (x < 0 && x == -z) || (x > 0 && x == 1 - z)) {
-            int previousStepX = stepX;
-            stepX = -stepZ;
-            stepZ = previousStepX;
+        bool tooClose = std::any_of(
+            layoutSlots.begin(), layoutSlots.end(), [&](const LayoutSlot &slot) {
+                float dx = position.x - slot.position.x;
+                float dy = position.y - slot.position.y;
+                float dz = position.z - slot.position.z;
+                return dx * dx + dy * dy + dz * dz < spacing * spacing;
+            });
+        if (!tooClose) {
+            return position;
         }
-        x += stepX;
-        z += stepZ;
     }
 }
 

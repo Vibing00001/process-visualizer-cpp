@@ -17,6 +17,7 @@ class CameraController {
   public:
     CameraController();
     void setSceneRadius(float radius);
+    void startCloseUp();
     void update(const std::optional<Vector3> &selectedPosition);
     const Camera3D& getCamera() const;
 };
