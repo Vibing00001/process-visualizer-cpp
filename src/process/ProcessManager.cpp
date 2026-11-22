@@ -1,5 +1,6 @@
 #include "ProcessManager.h"
 #include "CpuStuff.h"
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -11,7 +12,23 @@
 
 namespace fs = std::filesystem;
 
-std::shared_ptr<const ProcessMap> ProcessManager::getProcesses(){
+ProcessManager::ProcessManager() {
+    worker = std::jthread(
+        [this](std::stop_token stopToken) { workerLoop(stopToken); });
+}
+
+void ProcessManager::workerLoop(std::stop_token stopToken) {
+    while (!stopToken.stop_requested()) {
+        updateProcesses();
+
+        std::unique_lock<std::mutex> lock(sleepMutex);
+
+        cv.wait_for(lock, stopToken, std::chrono::seconds(1),
+                    [] { return false; });
+    }
+}
+
+std::shared_ptr<const ProcessMap> ProcessManager::getProcesses() {
     std::lock_guard<std::mutex> lock(mutex);
     return processes;
 }
@@ -67,12 +84,21 @@ void ProcessManager::updateProcesses() {
             }
         }
 
-        // too long to check if its valid or not.
+        if (pid.empty() || ppid.empty()) {
+            continue;
+        }
+
+        float memoryMB = 0.0f;
+
+        if (!memory.empty()) {
+            memoryMB = std::stof(memory) / 1024.0f;
+        }
+
         float cpuUsage =
             static_cast<float>(cpuCalculator.getCpuUsage(std::stoi(pid)));
 
         Process process{std::stoi(pid),     std::stoi(ppid), name,
-                        {0.0f, 0.0f, 0.0f}, cpuUsage,        std::stof(memory)};
+                        {0.0f, 0.0f, 0.0f}, cpuUsage,        memoryMB};
 
         newSnapShot->emplace(std::stoi(pid), process);
     }
