@@ -2,7 +2,6 @@
 #include "raylib.h"
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <memory>
 #include <utility>
 
@@ -20,8 +19,9 @@ const Process &startupProcess(const ProcessMap &processes) {
 } // namespace
 
 Application::Application() {
-    SetConfigFlags(FLAG_MSAA_4X_HINT);
-    InitWindow(1920, 1080, "Linux Process Visualizer");
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
+    InitWindow(1440, 900, "Linux Process Visualizer");
+    SetWindowMinSize(760, 480);
     SetTargetFPS(60);
 
     lighting = std::make_unique<Lighting>();
@@ -49,8 +49,8 @@ void Application::run() {
                     std::hypot(process.pos.x, process.pos.y, process.pos.z);
                 sceneRadius = std::max(sceneRadius, distance);
             }
-            // Leave room around the outermost centers for the spheres and labels.
-            cameraController.setSceneRadius(sceneRadius + 3.0f);
+            // Leave space for the outer nodes and the screen overlays.
+            cameraController.setSceneRadius(sceneRadius * 1.13f + 3.0f);
         }
         bool openingCloseUp = !started && !snapshot->empty();
         if (openingCloseUp) {
@@ -58,10 +58,10 @@ void Application::run() {
             cameraController.startCloseUp();
             started = true;
         }
-        bool mouseClicked =
-            !openingCloseUp && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-        if (mouseClicked) {
-            Ray ray = GetScreenToWorldRay(GetMousePosition(),
+        Vector2 mouse = GetMousePosition();
+        if (!openingCloseUp && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+            !renderer->isOverHud(mouse, selectedPid.has_value())) {
+            Ray ray = GetScreenToWorldRay(mouse,
                                           cameraController.getCamera());
             selectedPid = renderer->pickProcess(ray, *snapshot);
         }
@@ -72,12 +72,7 @@ void Application::run() {
             if (it == snapshot->end()) {
                 selectedPid.reset();
             } else {
-                const Process &process = it->second;
-                selectedPosition = process.pos;
-                if (mouseClicked) {
-                    std::cout << *selectedPid << "\n";
-                    std::cout << process.name << " " << process.cpuUsage << "\n";
-                }
+                selectedPosition = it->second.pos;
             }
         }
         cameraController.update(selectedPosition);
@@ -86,19 +81,18 @@ void Application::run() {
 
         BeginDrawing();
         ClearBackground(BLACK);
+        renderer->renderBackdrop();
 
         BeginMode3D(camera);
 
-        renderer->render(*snapshot);
+        renderer->render(*snapshot, selectedPid);
         renderer->renderOutline(selectedPid, *snapshot, camera);
 
         EndMode3D();
 
         renderer->renderLabels(*snapshot, camera, selectedPid);
 
-        renderer->renderTextInfo(selectedPid, *snapshot);
-
-        DrawFPS(10, 10);
+        renderer->renderHud(selectedPid, *snapshot);
         EndDrawing();
     }
 }

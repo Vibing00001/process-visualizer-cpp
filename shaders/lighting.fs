@@ -7,6 +7,7 @@ uniform vec4 colDiffuse;
 
 uniform vec3 lightDirection;
 uniform vec3 viewPos;
+uniform vec3 selectionEmission;
 
 out vec4 finalColor;
 
@@ -15,33 +16,17 @@ void main()
     vec3 normal = normalize(fragNormal);
     vec3 light = normalize(lightDirection);
 
-    // 1. Ambient lighting
-    float ambient = 0.25;
-
-    // 2. Diffuse lighting
+    vec3 view = normalize(viewPos - fragPosition);
     float diffuse = max(dot(normal, light), 0.0);
+    float facing = max(dot(normal, view), 0.0);
+    float rim = pow(1.0 - facing, 2.6);
+    float reflection = max(dot(normal, normalize(light + view)), 0.0);
 
-    // 3. Specular lighting
-    vec3 viewDir = normalize(viewPos - fragPosition);
-    vec3 reflectDir = reflect(-light, normal);
-
-    float specular = 0.0;
-
-    if (diffuse > 0.0)
-    {
-        specular = pow(
-            max(dot(viewDir, reflectDir), 0.0),
-            32.0
-        );
-    }
-
-    // Process color
-    vec3 baseColor = colDiffuse.rgb;
-
-    // Combine lighting
-    vec3 result =
-        baseColor * (ambient + diffuse * 0.65)
-        + vec3(1.0) * specular * 0.35;
-
-    finalColor = vec4(clamp(result, 0.0, 1.0), colDiffuse.a);
+    vec3 base = colDiffuse.rgb;
+    vec3 color = base * (0.42 + 0.54 * diffuse);
+    color += mix(base, vec3(0.74, 0.80, 1.0), 0.4) * rim * 0.40;
+    color += vec3(0.78, 0.87, 1.0) *
+             (0.10 * pow(reflection, 8.0) + 0.26 * pow(reflection, 54.0));
+    color += selectionEmission * (0.035 + 0.60 * rim);
+    finalColor = vec4(min(color, vec3(1.0)), colDiffuse.a);
 }
